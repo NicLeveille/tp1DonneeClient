@@ -15,8 +15,42 @@ function Init_UI() {
     $('#aboutCmd').on("click", function () {
         renderAbout();
     });
-}
+    renderCategories();
+    
 
+}
+async function renderCategories() {
+    const categories = [];
+    let contacts = await API_GetBookmarks();
+    contacts.forEach(element => {
+        if (!categories.includes(element.Logo)) {
+            categories.push(element.Logo);
+        }       
+    });
+    $("#categories").append(
+        $(`<div class="dropdown-item" id="all" value="all">
+            <span>Toutes les categories<span>
+        </div>`)
+
+    );
+    $("#all").on("click", function () {
+        renderContactsByCategories("all");
+    });
+    categories.forEach(categorie =>{
+        $("#categories").append(
+            $(`<div class="dropdown-item" id="${categorie}" value=${categorie}>
+                <span>${categorie}<span>
+            </div>`)
+
+        );
+        $("#"+categorie).on("click", function () {
+            renderContactsByCategories(categorie);
+        });
+    });
+    
+    
+
+}
 function renderAbout() {
     saveContentScrollPosition();
     eraseContent();
@@ -51,6 +85,42 @@ async function renderContacts() {
     if (contacts !== null) {
         contacts.forEach(contact => {
             $("#content").append(renderContact(contact));
+        });
+        restoreContentScrollPosition();
+        // Attached click events on command icons
+        $(".editCmd").on("click", function () {
+            saveContentScrollPosition();
+            renderEditContactForm(parseInt($(this).attr("editContactId")));
+        });
+        $(".deleteCmd").on("click", function () {
+            saveContentScrollPosition();
+            renderDeleteContactForm(parseInt($(this).attr("deleteContactId")));
+        });
+        $(".contactRow").on("click", function (e) { e.preventDefault(); })
+    } else {
+        renderError("Service introuvable");
+    }
+}
+async function renderContactsByCategories(categorie) {
+    console.log(categorie);
+    if(categorie == "all")
+    {
+        renderContacts();
+        return;
+    }
+
+    showWaitingGif();
+    $("#actionTitle").text("Liste des Bookmarks");
+    $("#createContact").show();
+    $("#abort").hide();
+    let contacts = await API_GetBookmarks();
+    eraseContent();
+    if (contacts !== null) {
+        contacts.forEach(contact => {
+            console.log(contact.Logo);
+            if(contact.Logo == categorie){
+                $("#content").append(renderContact(contact));
+            }
         });
         restoreContentScrollPosition();
         // Attached click events on command icons
@@ -109,7 +179,7 @@ async function renderDeleteContactForm(id) {
     let contact = await API_GetBookmark(id);
     eraseContent();
     if (contact !== null) {
-        
+
         $("#content").append(`
         <div class="contactdeleteForm">
             <h4>Effacer le Bookmark suivant?</h4>
